@@ -10,5 +10,8 @@
 
 @interface PARCardsViewController : UIViewController
 @property (strong, nonatomic) IBOutlet UICollectionView *collectionView;
+@property (weak, nonatomic) IBOutlet UILabel *timerLabel;
+@property (weak, nonatomic) IBOutlet UILabel *subtitleLabel;
 
+- (IBAction)restartGame:(id)sender;
 @end

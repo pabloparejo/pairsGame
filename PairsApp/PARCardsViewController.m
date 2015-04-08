@@ -8,10 +8,16 @@
 
 #import "PARCardsViewController.h"
 #import "PARCardViewCell.h"
+
+#define NUMBER_OF_CARDS 16
 @interface PARCardsViewController () <UICollectionViewDataSource, UICollectionViewDelegate>
 
 @property (strong, nonatomic) NSArray *model;
 @property (strong, nonatomic) PARCardViewCell *selectedCell;
+@property (strong, nonatomic) NSDate *startTime;
+@property (nonatomic) NSUInteger foundCards;
+@property (strong, nonatomic) NSTimer *timer;
+
 
 @end
 
@@ -19,33 +25,11 @@
 
 static NSString * const reuseIdentifier = @"Cell";
 
-- (instancetype) init{
-    if (self=[super init]) {
-        NSMutableArray *randNumbers = [NSMutableArray array];
-        for (int i=0; i<16; i++) {
-            NSNumber *random = @(arc4random_uniform(8) + 1);
-            
-            static int timesFound = 0;
-            [randNumbers enumerateObjectsWithOptions:NSEnumerationConcurrent usingBlock:^(NSNumber *obj, NSUInteger idx, BOOL *stop) {
-                if ([obj integerValue]  == [random integerValue]) {
-                    timesFound++;
-                }
-            }];
-            if (timesFound < 2) {
-                [randNumbers addObject:random];
-            }else{
-                i--;
-            }
-            timesFound = 0;
-        }
-        _model = [randNumbers copy];
-    }
-    return self;
-}
-
 - (void)viewDidLoad {
     [super viewDidLoad];
     [self setTitle:@"Pairs!"];
+    
+    [self startNewGame];
 
     [self.collectionView setDataSource:self];
     [self.collectionView setDelegate:self];
@@ -61,15 +45,6 @@ static NSString * const reuseIdentifier = @"Cell";
     // Dispose of any resources that can be recreated.
 }
 
-/*
-#pragma mark - Navigation
-
-// In a storyboard-based application, you will often want to do a little preparation before navigation
-- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
-    // Get the new view controller using [segue destinationViewController].
-    // Pass the selected object to the new view controller.
-}
-*/
 
 #pragma mark <UICollectionViewDataSource>
 
@@ -79,7 +54,7 @@ static NSString * const reuseIdentifier = @"Cell";
 
 
 - (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section {
-    return 16;
+    return NUMBER_OF_CARDS;
 }
 
 - (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView
@@ -110,9 +85,13 @@ static NSString * const reuseIdentifier = @"Cell";
     }else{
         NSLog(@"%@ - %@", self.selectedCell.cardLabel.text, cell.cardLabel.text);
         if ([self.selectedCell.cardLabel.text isEqualToString: cell.cardLabel.text]) {
-            NSLog(@"FOUND!");
+            self.foundCards += 2;
+            if (self.foundCards == NUMBER_OF_CARDS) {
+                [self.subtitleLabel setText:@"YOU WIN!"];
+                [self.timer invalidate];
+            }
         }else{
-            // Delay execution of my block for 10 seconds.
+            // Delay execution of my block for 1 second.
             __weak PARCardViewCell *weakCell = self.selectedCell;
             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
                 [collectionView deselectItemAtIndexPath:[collectionView indexPathForCell:weakCell] animated:YES];
@@ -123,4 +102,54 @@ static NSString * const reuseIdentifier = @"Cell";
     }
 }
 
+#pragma mark - Utils
+
+-(void) startNewGame{
+    [self.subtitleLabel setText:@""];
+    [self.timer invalidate];
+    self.timer = [NSTimer scheduledTimerWithTimeInterval:0.5 target:self selector:@selector(updateTimer) userInfo:nil repeats:YES];
+    self.startTime = [NSDate date];
+    self.model = [self generateRandNumbers];
+    self.selectedCell = nil;
+    self.foundCards = 0;
+    [self.collectionView reloadData];
+}
+
+-(NSArray *) generateRandNumbers{
+    NSMutableArray *randNumbers = [NSMutableArray array];
+    for (int i=0; i<NUMBER_OF_CARDS; i++) {
+        NSNumber *random = @(arc4random_uniform(NUMBER_OF_CARDS / 2) + 1);
+        
+        static int timesFound = 0;
+        [randNumbers enumerateObjectsWithOptions:NSEnumerationConcurrent usingBlock:^(NSNumber *obj, NSUInteger idx, BOOL *stop) {
+            if ([obj integerValue]  == [random integerValue]) {
+                timesFound++;
+            }
+        }];
+        if (timesFound < 2) {
+            [randNumbers addObject:random];
+        }else{
+            i--;
+        }
+        timesFound = 0;
+    }
+    return [randNumbers copy];
+}
+
+- (IBAction)restartGame:(id)sender {
+    [self startNewGame];
+}
+
+- (NSString *)stringFromTimeInterval:(NSTimeInterval)interval {
+    NSInteger ti = (NSInteger)interval;
+    //float milisecods = (interval - ti)*10;
+    NSInteger seconds = ti % 60;
+    NSInteger minutes = (ti / 60) % 60;
+    return [NSString stringWithFormat:@"%02ld:%02ld", (long)minutes, (long)seconds];
+}
+
+-(void) updateTimer{
+    NSTimeInterval interval = [[NSDate date] timeIntervalSinceDate:self.startTime];
+    [self.timerLabel setText:[self stringFromTimeInterval:interval]];
+}
 @end
