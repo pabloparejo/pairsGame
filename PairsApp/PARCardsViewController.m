@@ -52,7 +52,6 @@ static NSString * const reuseIdentifier = @"Cell";
     return 1;
 }
 
-
 - (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section {
     return NUMBER_OF_CARDS;
 }
@@ -62,7 +61,7 @@ static NSString * const reuseIdentifier = @"Cell";
 
     PARCardViewCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:reuseIdentifier
                                                                       forIndexPath:indexPath];
-    
+
     NSString *cellText = [NSString stringWithFormat:@"%@", [self.model objectAtIndex:indexPath.row]];
     [cell.cardLabel setText:cellText];
     // Configure the cell
@@ -72,7 +71,7 @@ static NSString * const reuseIdentifier = @"Cell";
 #pragma mark <UICollectionViewDelegate>
 
 -(BOOL) collectionView:(UICollectionView *)collectionView shouldDeselectItemAtIndexPath:(NSIndexPath *)indexPath{
-    if (self.selectedCell) {
+    if ([collectionView cellForItemAtIndexPath:indexPath].selected) {
         return NO;
     }
     return YES;
